@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0b1424">
+<title>NEXUS | Smart Attendance</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+
+<script src="https://unpkg.com/html5-qrcode"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+
+<body>
+
+<!-- LOGIN SCREEN -->
+<div id="loginScreen" style="position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;background:#f5f7fb;padding:20px;overflow:auto">
+  <form id="loginForm" style="width:100%;max-width:420px;background:white;padding:30px;border:1px solid #e7edf4;border-radius:18px;box-shadow:0 18px 55px #10243a18">
+    <div style="font:700 25px 'Space Grotesk';letter-spacing:2px;color:#10243a">NEXUS</div>
+    <p style="color:#718096;margin:5px 0 24px">SMART ATTENDANCE · ADMIN LOGIN</p>
+
+    <label style="display:grid;gap:7px;margin:13px 0;color:#596a80;font-size:12px;font-weight:600">
+      Supabase project URL
+      <input id="loginUrl" type="url" required placeholder="https://your-project.supabase.co">
+    </label>
+
+    <label style="display:grid;gap:7px;margin:13px 0;color:#596a80;font-size:12px;font-weight:600">
+      Supabase publishable / anon key
+      <input id="loginKey" type="password" required placeholder="sb_publishable_...">
+    </label>
+
+    <label style="display:grid;gap:7px;margin:13px 0;color:#596a80;font-size:12px;font-weight:600">
+      Admin email
+      <input id="loginEmail" type="email" required placeholder="admin@example.com">
+    </label>
+
+    <label style="display:grid;gap:7px;margin:13px 0 20px;color:#596a80;font-size:12px;font-weight:600">
+      Password
+      <input id="loginPassword" type="password" required placeholder="Your password">
+    </label>
+
+    <button type="submit" class="btn primary" style="width:100%;height:44px">Login to dashboard ↗</button>
+    <p id="loginError" style="color:#dc3545;font-size:12px;line-height:1.5"></p>
+    <p style="color:#98a3b2;font-size:10px;line-height:1.5">Use your Supabase project URL, publishable key and the admin account created in Supabase Authentication. Never enter your database password or service-role key.</p>
+  </form>
+</div>
+
+<!-- MAIN DASHBOARD -->
+<div class="shell" id="appShell" style="display:none">
+
+<aside class="side" id="side">
+  <div class="brand">
+    <span class="brandmark">⌗</span>
+    <div><b>NEXUS</b><small>SMART ATTENDANCE</small></div>
+  </div>
+
+  <div class="caption">WORKSPACE</div>
+
+  <nav class="nav">
+    <button class="active" data-page="overview"><span>◫</span>Overview</button>
+    <button data-page="scanner"><span>⌗</span>Live Scanner</button>
+    <button data-page="students"><span>♙</span>Students</button>
+    <button data-page="attendance"><span>▤</span>Attendance</button>
+    <button data-page="devices"><span>⌘</span>IoT Devices</button>
+    <button data-page="settings"><span>⚙</span>Settings</button>
+  </nav>
+
+  <div class="sidebottom">
+    <div class="device-mini">
+      <span>●</span>
+      <div><b>ESP32 Device</b><small>Not connected yet</small></div>
+    </div>
+    <div class="profile">
+      <span class="avatar">NA</span>
+      <div><b>Administrator</b><small>Project workspace</small></div>
+    </div>
+  </div>
+</aside>
+
+<main class="main">
+
+<header class="top">
+  <button class="menu" id="menu">☰</button>
+  <div class="crumb">Workspace <b id="crumb">/ Overview</b></div>
+  <div class="topright">
+    <span class="pill" id="connection">Supabase</span>
+    <button class="menu" id="refresh" title="Refresh">↻</button>
+    <button class="btn secondary" id="logout" style="padding:8px 10px">Logout</button>
+  </div>
+</header>
+
+<!-- OVERVIEW -->
+<section class="page active" id="overview">
+  <div class="heading">
+    <div>
+      <p class="eyebrow">ATTENDANCE CONTROL CENTER</p>
+      <h1>Overview</h1>
+      <p class="muted">Monitor attendance activity and your IoT setup.</p>
+    </div>
+    <span class="pill" id="today">Today</span>
+  </div>
+
+  <div class="hero">
+    <div class="hero-copy">
+      <div class="hero-kicker">● SYSTEM OVERVIEW</div>
+      <h2>Attendance,<br><em>made smarter.</em></h2>
+      <p>Scan student IDs, record attendance and monitor your ESP32 device from one place.</p>
+      <button class="btn primary" data-go="scanner">Open live scanner ↗</button>
+    </div>
+    <div class="visual"><div class="core"><b>NX</b></div></div>
+  </div>
+
+  <div class="section-title">
+    <div><h2>Today's snapshot</h2><p class="muted">Live figures from attendance records</p></div>
+    <span class="badge">● LIVE</span>
+  </div>
+
+  <div class="stats">
+    <article class="card"><div class="stat-top">Total students</div><strong id="total">0</strong><small>Registered in database</small></article>
+    <article class="card"><div class="stat-top">Present today</div><strong id="present">0</strong><small>Attendance marked today</small></article>
+    <article class="card"><div class="stat-top">Attendance rate</div><strong id="rate">0%</strong><small>Based on registered students</small></article>
+    <article class="card"><div class="stat-top">IoT device</div><strong style="font-size:18px">Offline</strong><small>Waiting for ESP32</small></article>
+  </div>
+
+  <div class="content">
+    <section class="panel">
+      <div class="panel-head">
+        <div><h2>Recent attendance</h2><p class="muted">Latest student check-ins</p></div>
+        <button class="btn secondary" data-go="attendance">View all →</button>
+      </div>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>STUDENT</th><th>ENROLLMENT</th><th>TIME</th><th>STATUS</th></tr></thead>
+          <tbody id="recent"><tr><td colspan="4" class="empty">No attendance records yet.</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head"><div><h2>Device status</h2><p class="muted">ESP32 connection</p></div><span class="badge off">Offline</span></div>
+      <div class="device-art"><span>⌘</span></div>
+      <div class="device-meta">
+        <div><span>Device</span><b>ESP32 DevKit V1</b></div>
+        <div><span>Connection</span><b>Not configured</b></div>
+        <div><span>Last heartbeat</span><b>—</b></div>
+      </div>
+      <button class="btn secondary full" data-go="devices">View device details</button>
+    </section>
+  </div>
+</section>
+
+<!-- SCANNER -->
+<section class="page" id="scanner">
+  <div class="heading">
+    <div><p class="eyebrow">MOBILE CAMERA INPUT</p><h1>Live scanner</h1><p class="muted">Scan a student's college ID barcode to record attendance.</p></div>
+  </div>
+
+  <div class="scannergrid">
+    <section class="panel">
+      <div class="panel-head"><div><h2>Barcode scanner</h2><p class="muted">Use your phone's rear camera.</p></div><span class="badge">SCAN MODE</span></div>
+      <div class="scannerbox" id="reader">
+        <div class="placeholder"><span class="symbol">⌗</span><b>Camera preview</b><small>Start the scanner to activate your camera.</small></div>
+      </div>
+      <div class="actions">
+        <button class="btn primary" id="start">Start camera ↗</button>
+        <button class="btn secondary" id="stop" disabled>Stop camera</button>
+      </div>
+      <p class="muted">Camera access requires HTTPS or localhost. Allow camera permission when prompted.</p>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head"><div><h2>Scan result</h2><p class="muted">Latest decoded barcode</p></div></div>
+      <div class="result" id="result"><span class="symbol">⌗</span><b>Waiting for scan</b><small>Decoded barcode details will appear here.</small></div>
+      <div class="meta">
+        <div><span>Student</span><b id="rname">—</b></div>
+        <div><span>Enrollment</span><b id="renroll">—</b></div>
+        <div><span>Attendance</span><b id="rstatus">Not recorded</b></div>
+      </div>
+      <button class="btn secondary full" id="manual">Enter barcode manually</button>
+    </section>
+  </div>
+</section>
+
+<!-- STUDENTS -->
+<section class="page" id="students">
+  <div class="heading">
+    <div><p class="eyebrow">DATABASE MANAGEMENT</p><h1>Students</h1><p class="muted">Manage registered students and barcode identifiers.</p></div>
+    <button class="btn primary" id="add">＋ Add student</button>
+  </div>
+
+  <section class="panel">
+    <div class="toolbar">
+      <input class="search" id="studentSearch" placeholder="Search name, enrollment or barcode...">
+      <span class="muted" id="studentCount">0 students</span>
+    </div>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>STUDENT</th><th>ENROLLMENT</th><th>BARCODE VALUE</th><th>REGISTERED</th></tr></thead>
+        <tbody id="studentRows"><tr><td colspan="4" class="empty">No students loaded.</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+</section>
+
+<!-- ATTENDANCE -->
+<section class="page" id="attendance">
+  <div class="heading">
+    <div><p class="eyebrow">CHECK-IN HISTORY</p><h1>Attendance records</h1><p class="muted">Review daily attendance and export records.</p></div>
+    <button class="btn secondary" id="export">↓ Export CSV</button>
+  </div>
+
+  <section class="panel">
+    <div class="toolbar">
+      <input class="search" id="attSearch" placeholder="Search student or enrollment...">
+      <input class="date" type="date" id="attDate">
+    </div>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>STUDENT</th><th>ENROLLMENT</th><th>DATE</th><th>TIME</th><th>STATUS</th></tr></thead>
+        <tbody id="attRows"><tr><td colspan="5" class="empty">No records loaded.</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+</section>
+
+<!-- DEVICES -->
+<section class="page" id="devices">
+  <div class="heading">
+    <div><p class="eyebrow">CONNECTED HARDWARE</p><h1>IoT devices</h1><p class="muted">Monitor the ESP32 and attendance feedback components.</p></div>
+    <span class="badge off">Not connected</span>
+  </div>
+
+  <div class="stats">
+    <article class="card"><div class="stat-top">Controller</div><strong>ESP32</strong><small>DevKit V1</small></article>
+    <article class="card"><div class="stat-top">Network</div><strong>Wi-Fi</strong><small>Cloud communication</small></article>
+    <article class="card"><div class="stat-top">Display</div><strong>OLED</strong><small>SSD1306 I²C</small></article>
+    <article class="card"><div class="stat-top">Feedback</div><strong style="font-size:18px">LED + buzzer</strong><small>Success / error</small></article>
+  </div>
+
+  <section class="panel" style="margin-top:15px;max-width:760px">
+    <h2>How the IoT flow works</h2>
+    <p class="muted">01 · Phone scans barcode and sends decoded value to backend.</p>
+    <p class="muted">02 · Backend validates student and records timestamp.</p>
+    <p class="muted">03 · ESP32 receives confirmation and updates OLED, LED and buzzer.</p>
+    <div class="callout">Live device status will be enabled after ESP32 firmware and a secure device heartbeat endpoint are configured.</div>
+  </section>
+</section>
+
+<!-- SETTINGS -->
+<section class="page" id="settings">
+  <div class="heading">
+    <div><p class="eyebrow">CONFIGURATION</p><h1>Settings</h1><p class="muted">Manage your Supabase connection.</p></div>
+  </div>
+
+  <section class="panel setup">
+    <div>
+      <h2>Database connection</h2>
+      <p class="muted">Use your project URL and publishable anon key.</p>
+      <label>Supabase project URL<input id="url" placeholder="https://your-project.supabase.co"></label>
+      <label>Supabase publishable / anon key<input id="key" placeholder="sb_publishable_... or legacy anon key"></label>
+      <button class="btn primary" id="save">Save connection</button>
+      <button class="btn secondary" id="clear">Clear</button>
+      <p class="muted">Never enter your database password or service-role key here.</p>
+    </div>
+    <div class="callout">Student and attendance table access requires authenticated RLS policies. Attendance marking is handled through the mark-attendance Edge Function.</div>
+  </section>
+</section>
+
+<footer class="footer">
+  <span>© 2026 NEXUS Smart Attendance</span>
+  <span>Connected campus technology</span>
+</footer>
+
+</main>
+</div>
+
+<!-- ADD STUDENT MODAL -->
+<div class="modalback" id="modal">
+  <form class="modal" id="studentForm">
+    <div class="modalhead">
+      <div><p class="eyebrow">STUDENT DIRECTORY</p><h2>Add student</h2></div>
+      <button type="button" class="btn secondary" id="close">×</button>
+    </div>
+    <label>Student name<input name="student_name" required placeholder="Student full name"></label>
+    <label>Enrollment number<input name="enrollment_number" required placeholder="Enrollment number"></label>
+    <label>Barcode value<input name="barcode_value" required placeholder="Decoded barcode value"></label>
+    <div class="modalactions">
+      <button type="button" class="btn secondary" id="cancel">Cancel</button>
+      <button class="btn primary" type="submit">Save student</button>
+    </div>
+  </form>
+</div>
+
+<div class="toast" id="toast"></div>
+
+
+<script src="js/script.js"></script>
+</body>
+</html>
